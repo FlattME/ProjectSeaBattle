@@ -134,6 +134,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if
         screen.fill('white')
         hum_board.render(screen)
         pc_board.render(screen)
