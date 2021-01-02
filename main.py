@@ -19,11 +19,10 @@ destroyed_ships_pc = []
 
 # создание поля
 class Board:
-    def __init__(self, width, height, left, top, signature):
+    def __init__(self, width, height, left, top):
         self.width = width
         self.height = height
         self.board = [[0] * width for _ in range(height)]
-        self.signature = signature
 
         self.left = left - 40
         self.top = top - 40
@@ -31,7 +30,7 @@ class Board:
         self.ybox = [str(i) for i in range(1, 11)]
         self.xbox = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И']
 
-    def render(self, screen):
+    def render(self, screen, signature):
         for y in range(1, self.height + 1):
             for x in range(1, self.width + 1):
                 pygame.draw.rect(
@@ -50,7 +49,7 @@ class Board:
 
         # назввание игрока
         font = pygame.font.Font(None, 50)
-        text = font.render(self.signature, 2, 'black')
+        text = font.render(signature, 2, 'black')
         screen.blit(
             text, ((self.left + 40 + (self.cell_size*10/2)) - text.get_width()//2,
                    self.top + 40 + self.cell_size * 10 + text.get_height()//2))
@@ -143,8 +142,11 @@ def draw_ships(screen, ships_coordinates_list, cell_size, left, top, btwn):
 
 # выстрел компьютера
 def pc_shoots(set_to_shoot_from, flag=False):
-    pygame.time.delay(500)
-    cell_ = random.choice(tuple(set_to_shoot_from))
+    if flag:
+        cell_ = tuple(set_to_shoot_from)
+    else:
+        pygame.time.delay(500)
+        cell_ = random.choice(tuple(set_to_shoot_from))
     pc_blocks_fire.discard(cell_)
     return hit_or_miss(cell_, hum_ships_working, True)
 
@@ -307,9 +309,9 @@ def main():
     run = True
     start = True
     game_over = False
-    repeat_ = False
+    solo = None
     win = False
-    hum_turn = True
+    hum_turn = random.choice([True, False])
     cell_size = 40
     left = 40
     top = 20
@@ -320,12 +322,12 @@ def main():
     size = (width, height)
 
     screen = pygame.display.set_mode(size)
-    pygame.display.set_caption("SeaBattle")
+    pygame.display.set_caption("Sea Battle")
 
     screen.fill('white')
 
-    pc_board = Board(10, 10, left, top, 'компьютер')
-    hum_board = Board(10, 10, left + btwn + cell_size * 10, top, 'вы')
+    first_board = Board(10, 10, left, top)
+    second_board = Board(10, 10, left + btwn + cell_size * 10, top)
     clock = pygame.time.Clock
 
     while run:
@@ -336,17 +338,32 @@ def main():
                 x, y = event.pos
                 if start:
                     if event.button == 1:
-                        if (400 <= x <= 700) and (300 <= y <= 400):
+                        if (220 <= x <= 870) and (300 <= y <= 400):
                             start = False
+                            solo = False
+                        elif (220 <= x <= 870) and (500 <= y <= 600):
+                            start = False
+                            solo = True
                 else:
-                    if event.button == 1 and hum_turn:
-                        if (left <= x <= left + 10 * cell_size) and (top <= y <= top + 10 * cell_size):
-                            fired_block = ((x - left) // cell_size + 1, (y - top) // cell_size + 1)
-                            if (fired_block in dot) or (fired_block in hit_blocks_hum):
-                                pass
-                            else:
-                                hum_turn = hit_or_miss(
-                                    fired_block, pc_ships_working, not hum_turn)
+                    if event.button == 1:
+                        if hum_turn:
+                            if (left <= x <= left + 10 * cell_size) and (top <= y <= top + 10 * cell_size):
+                                fired_block = ((x - left) // cell_size + 1, (y - top) // cell_size + 1)
+                                if (fired_block in dot) or (fired_block in hit_blocks_hum):
+                                    pass
+                                else:
+                                    hum_turn = hit_or_miss(
+                                        fired_block, pc_ships_working, not hum_turn)
+                        if solo and not hum_turn:
+                            if (left + cell_size * 10 + btwn <= x <= left + cell_size * 20 + btwn) \
+                                    and (top <= y <= top + 10 * cell_size):
+                                fired_block = ((x - left) // cell_size + 1, (y - top) // cell_size + 1)
+                                if (fired_block in dot) or (fired_block in hit_blocks_hum):
+                                    pass
+                                else:
+                                    hum_turn = not pc_shoots((fired_block[0] - 12, fired_block[1]), True)
+                        if (800 <= x <= 1050) and (550 <= y <= 650):
+                            start = True
 
         if len(destroyed_ships_pc) == 10:
             game_over = True
@@ -361,43 +378,92 @@ def main():
                 text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2 - 300))
 
             font = pygame.font.Font(None, 80)
-            text = font.render('Начать', 1, 'black')
+            text = font.render('Против компьютера', 1, 'black')
             w = text.get_width()
             h = text.get_height()
-            screen.blit(
-                text, (width / 2 - w // 2, height / 2 - h // 2))
-            pygame.draw.rect(
-                screen, 'black', (400, 300, 300, 100), 5)
+            screen.blit(text, (width / 2 - w // 2, height / 2 - h // 2))
+            pygame.draw.rect(screen, 'black', (220, 300, 650, 100), 5)
+
+            font = pygame.font.Font(None, 80)
+            text = font.render('С другом', 1, 'black')
+            w = text.get_width()
+            h = text.get_height()
+            screen.blit(text, (width / 2 - w // 2, height / 2 - h // 2 + 200))
+            pygame.draw.rect(screen, 'black', (220, 300 + 200, 650, 100), 5)
+
         elif game_over:
-            pygame.time.delay(1000)
-            screen.fill('white')
-            font = pygame.font.Font(None, 100)
-            text = font.render('Ты проиграл :(', 1, 'red')
-            screen.blit(text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
+            if not solo:
+                screen.fill('white')
+                font = pygame.font.Font(None, 100)
+                text = font.render('Ты проиграл :(', 1, 'red')
+                screen.blit(text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
+            else:
+                screen.fill('white')
+                font = pygame.font.Font(None, 100)
+                text = font.render('победил 1 игрок', 1, 'green')
+                screen.blit(text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
+
         elif win:
             pygame.time.delay(1000)
-            screen.fill('white')
-            font = pygame.font.Font(None, 100)
-            text = font.render('Ты победил!', 1, 'green')
-            screen.blit(
-                text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
+            if not solo:
+                screen.fill('white')
+                font = pygame.font.Font(None, 100)
+                text = font.render('Ты победил!', 1, 'green')
+                screen.blit(
+                    text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
+            else:
+                screen.fill('white')
+                font = pygame.font.Font(None, 100)
+                text = font.render('победил 2 игрок', 1, 'green')
+                screen.blit(text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
         else:
             screen.fill('white')
-            if not hum_turn:
-                if around_pc_hit:
-                    hum_turn = not pc_shoots(around_pc_hit)
+
+            if solo:
+                if hum_turn:
+                    pygame.draw.line(screen, 'black', (left + cell_size * 10, top + cell_size * 11),
+                                     (left + cell_size * 10 + btwn, top + cell_size * 11), 10)
+                    pygame.draw.lines(screen, 'black', False, [(left + cell_size * 10 + 40, top + cell_size * 10 + 10),
+                                                               (left + cell_size * 10, top + cell_size * 11),
+                                                               (left + cell_size * 10 + 40, top + cell_size * 10 + 70)],
+                                      10)
                 else:
-                    hum_turn = not pc_shoots(pc_blocks_fire)
+                    pygame.draw.line(screen, 'black', (left + cell_size * 10, top + cell_size * 11),
+                                     (left + cell_size * 10 + btwn, top + cell_size * 11), 10)
+                    pygame.draw.lines(screen, 'black', False, [(left + cell_size * 10 + 40, top + cell_size * 10 + 10),
+                                                               (left + cell_size * 10 + btwn, top + cell_size * 11),
+                                                               (left + cell_size * 10 + 40, top + cell_size * 10 + 70)],
+                                      10)
+                # draw_ships(screen, pc_ships.ships, cell_size, left, top, btwn)
+                # draw_ships(screen, hum_ships.ships, cell_size, left, top, btwn)
+            else:
+                if not hum_turn:
+                    if around_pc_hit:
+                        hum_turn = not pc_shoots(around_pc_hit)
+                    else:
+                        hum_turn = not pc_shoots(pc_blocks_fire)
 
-            pc_board.render(screen)
-            hum_board.render(screen)
+                # draw_ships(screen, pc_ships.ships, cell_size, left, top, btwn)
+                draw_ships(screen, hum_ships.ships, cell_size, left, top, btwn)
+            if solo:
+                first_board.render(screen, '1 игрок')
+                second_board.render(screen, '2 игрок')
+            else:
+                first_board.render(screen, 'компьютер')
+                second_board.render(screen, 'вы')
 
-            # draw_ships(screen, pc_ships.ships, cell_size, left, top, btwn)
-            draw_ships(screen, hum_ships.ships, cell_size, left, top, btwn)
-            # all_sprites.draw(screen)
+            font = pygame.font.Font(None, 80)
+            text = font.render('Назад', 1, 'black')
+            w = text.get_width()
+            h = text.get_height()
+
+            screen.blit(text, (width - 260, height - 130))
+            pygame.draw.rect(screen, 'black', (width - 300, height - 150, 250, 100), 5)
 
             draw_dot(screen, dot, cell_size, left, top)
             draw_hit(screen, hit_blocks, cell_size, left, top)
+
+            draw_ships(screen, destroyed_ships_pc, cell_size, left + btwn + cell_size * 10, top, btwn)
             draw_ships(screen, destroyed_ships_hum, cell_size, left, top, btwn)
 
         pygame.display.flip()
