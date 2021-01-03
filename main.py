@@ -279,6 +279,7 @@ def update_dot_hit(shot_block, hum_turn, diagonal_only=True):
     dot -= hit_blocks
 
 
+# рисуем разрушенные корабли
 def draw_destroyed_ships(ind, opponents_ships_list, hum_turn, diagonal_only=False):
     if opponents_ships_list == pc_ships_working:
         ships = pc_ships.ships
@@ -289,12 +290,14 @@ def draw_destroyed_ships(ind, opponents_ships_list, hum_turn, diagonal_only=Fals
         update_dot_hit(ship[i], hum_turn, diagonal_only)
 
 
+# рисуем промахи
 def draw_dot(screen, dot, cell_size, left, top):
     for elem in dot:
         pygame.draw.circle(
             screen, 'black', (cell_size*(elem[0]-0.5)+left, cell_size*(elem[1]-0.5)+top), cell_size//6)
 
 
+# рисовать попадания
 def draw_hit(screen, hit_blocks, cell_size, left, top):
     for i in hit_blocks:
         x1 = cell_size * (i[0]-1) + left
@@ -305,6 +308,26 @@ def draw_hit(screen, hit_blocks, cell_size, left, top):
             screen, 'black', (x1, y1+cell_size), (x1+cell_size, y1), cell_size//6)
 
 
+# обновляем
+def repeat_():
+    global pc_blocks_fire, pc_ships, pc_ships_working, hum_ships, hum_ships_working
+    pc_blocks_fire = set((a, b) for a in range(1, 11) for b in range(1, 11))
+    around_pc_hit.clear()
+    hit_blocks.clear()
+    hit_blocks_hum.clear()
+    dot.clear()
+    pc_dot.clear()
+    hit_blocks_for_pc_shoot.clear()
+    last_hits.clear()
+    destroyed_ships_hum.clear()
+    destroyed_ships_pc.clear()
+    pc_ships = Ships()
+    hum_ships = Ships()
+    pc_ships_working = copy.deepcopy(pc_ships.ships)
+    hum_ships_working = copy.deepcopy(hum_ships.ships)
+
+
+# основная функция
 def main():
     run = True
     start = True
@@ -328,7 +351,6 @@ def main():
 
     first_board = Board(10, 10, left, top)
     second_board = Board(10, 10, left + btwn + cell_size * 10, top)
-    clock = pygame.time.Clock
 
     while run:
         for event in pygame.event.get():
@@ -364,6 +386,7 @@ def main():
                                     hum_turn = not pc_shoots((fired_block[0] - 12, fired_block[1]), True)
                         if (800 <= x <= 1050) and (550 <= y <= 650):
                             start = True
+                            repeat_()
 
         if len(destroyed_ships_pc) == 10:
             game_over = True
@@ -388,20 +411,24 @@ def main():
             text = font.render('С другом', 1, 'black')
             w = text.get_width()
             h = text.get_height()
-            screen.blit(text, (width / 2 - w // 2, height / 2 - h // 2 + 200))
-            pygame.draw.rect(screen, 'black', (220, 300 + 200, 650, 100), 5)
+            screen.blit(
+                text, (width / 2 - w // 2, height / 2 - h // 2 + 200))
+            pygame.draw.rect(
+                screen, 'black', (220, 300 + 200, 650, 100), 5)
 
         elif game_over:
             if not solo:
                 screen.fill('white')
                 font = pygame.font.Font(None, 100)
                 text = font.render('Ты проиграл :(', 1, 'red')
-                screen.blit(text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
+                screen.blit(
+                    text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
             else:
                 screen.fill('white')
                 font = pygame.font.Font(None, 100)
                 text = font.render('победил 1 игрок', 1, 'green')
-                screen.blit(text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
+                screen.blit(
+                    text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
 
         elif win:
             pygame.time.delay(1000)
@@ -415,7 +442,8 @@ def main():
                 screen.fill('white')
                 font = pygame.font.Font(None, 100)
                 text = font.render('победил 2 игрок', 1, 'green')
-                screen.blit(text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
+                screen.blit(
+                    text, (width / 2 - text.get_width() // 2, height / 2 - text.get_height() // 2))
         else:
             screen.fill('white')
 
@@ -457,14 +485,20 @@ def main():
             w = text.get_width()
             h = text.get_height()
 
-            screen.blit(text, (width - 260, height - 130))
-            pygame.draw.rect(screen, 'black', (width - 300, height - 150, 250, 100), 5)
+            screen.blit(
+                text, (width - 260, height - 130))
+            pygame.draw.rect(
+                screen, 'black', (width - 300, height - 150, 250, 100), 5)
 
-            draw_dot(screen, dot, cell_size, left, top)
-            draw_hit(screen, hit_blocks, cell_size, left, top)
+            draw_dot(
+                screen, dot, cell_size, left, top)
+            draw_hit(
+                screen, hit_blocks, cell_size, left, top)
 
-            draw_ships(screen, destroyed_ships_pc, cell_size, left + btwn + cell_size * 10, top, btwn)
-            draw_ships(screen, destroyed_ships_hum, cell_size, left, top, btwn)
+            draw_ships(
+                screen, destroyed_ships_pc, cell_size, left + btwn + cell_size * 10, top, btwn)
+            draw_ships(
+                screen, destroyed_ships_hum, cell_size, left, top, btwn)
 
         pygame.display.flip()
 
